@@ -6,6 +6,7 @@ services:
       - "8123:8123"
       - "9000:9000"
     volumes:
+      - ./infra/clickhouse/init:/docker-entrypoint-initdb.d
       # Кастомная конфигурация пользователей и прав
       - ./infra/clickhouse/users.xml:/etc/clickhouse-server/users.d/users.xml
     ulimits:
@@ -20,3 +21,13 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  # Api — работа с сервисом
+  api:
+    build: ./services/api
+    ports:
+      - "4015:4015"
+    depends_on:
+      - clickhouse
+    environment:
+      - PYTHONUNBUFFERED=1

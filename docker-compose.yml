@@ -31,3 +31,40 @@ services:
       - clickhouse
     environment:
       - PYTHONUNBUFFERED=1
+
+  # Generator – генерация данных для RabbitMQ
+  generator:
+    build: ./services/generator
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_QUEUE=clickstream.events
+      - RATE_PER_SEC=30
+
+  # Сonsumer – подписывается на сообщения от генератора
+  consumer:
+    build: ./services/consumer
+    depends_on:
+      - rabbitmq
+      - api
+    environment:
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_QUEUE=clickstream.events
+      - API_URL=http://api:4015/events
+      - BATCH_SIZE=200
+      - FLUSH_INTERVAL_SEC=1.0
+  
+  # CSV Loader – загрузка первичных данных с помощью csv
+  csv_loader:
+    build: ./services/csv_loader
+    depends_on:
+      - api
+    environment:
+      - API_URL=http://api:4015/events
+      - CSV_PATH=/data/events.csv
+      - CHUNK=500
+    volumes:
+      - ./data:/data
+    profiles:
+      - manual

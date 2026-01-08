@@ -1,0 +1,22 @@
+services:
+  # ClickHouse — основное аналитическое хранилище
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      # Кастомная конфигурация пользователей и прав
+      - ./infra/clickhouse/users.xml:/etc/clickhouse-server/users.d/users.xml
+    ulimits:
+      # Рекомендуемые лимиты для ClickHouse
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  # RabbitMQ — брокер сообщений для clickstream событий
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"

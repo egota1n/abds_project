@@ -1,0 +1,25 @@
+<clickhouse>
+  <users>
+    <default>
+      <password></password>
+      <networks>
+        <ip>::/0</ip>
+      </networks>
+
+      <access_management>1</access_management>
+      <profile>default</profile>
+      <quota>default</quota>
+      <allow_databases>
+        <database>raw</database>
+        <database>dwh</database>
+        <database>mart</database>
+      </allow_databases>
+    </default>
+  </users>
+
+  <profiles>
+    <default>
+      <readonly>0</readonly>
+    </default>
+  </profiles>
+</clickhouse>

@@ -79,6 +79,29 @@ services:
     depends_on:
       - prometheus
   
+  airflow:
+    build: ./infra/airflow
+    ports:
+      - "5080:8080"
+    environment:
+      # Упрощенная конфигурация для локальной разработки
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      # Web UI
+      - GUNICORN_CMD_ARGS=--bind 0.0.0.0:8793
+      - AIRFLOW__WEBSERVER__RBAC=True
+      - AIRFLOW__WEBSERVER__AUTHENTICATE=True
+      - AIRFLOW__WEBSERVER__AUTH_BACKEND=airflow.auth.backend.basic_auth
+    volumes:
+      - ./infra/airflow/dags:/opt/airflow/dags
+    command: >
+      bash -c "
+      airflow db init &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
+      airflow standalone
+      "
+
   # CSV Loader – загрузка первичных данных с помощью csv
   csv_loader:
     build: ./services/csv_loader

@@ -31,7 +31,7 @@ def wait_for_rabbit(host: str, retries: int = 30, delay: int = 2):
     raise RuntimeError("RabbitMQ is not available")
 
 
-def main():
+def main(): # pragma: no cover
     # Подключение к RabbitMQ
     conn = wait_for_rabbit(RABBIT_HOST)
     ch = conn.channel()

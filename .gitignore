@@ -8,3 +8,6 @@ __pycache__
 infra/superset/superset.db
 infra/superset/*.db
 superset_home/
+
+# Tests
+.coverage

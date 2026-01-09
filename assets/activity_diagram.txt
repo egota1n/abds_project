@@ -1,0 +1,21 @@
+@startuml
+actor User
+participant API
+participant RabbitMQ
+participant Consumer
+participant ClickHouse
+participant Airflow
+participant Superset
+
+User -> API: POST /events
+API -> RabbitMQ: publish event
+API --> User: 200 OK
+
+RabbitMQ -> Consumer: deliver batch
+Consumer -> API: POST batch
+API -> ClickHouse: INSERT raw.events
+
+Airflow -> ClickHouse: ETL raw → dwh → mart
+Superset -> ClickHouse: SELECT marts
+
+@enduml

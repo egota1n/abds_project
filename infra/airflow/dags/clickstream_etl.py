@@ -92,7 +92,7 @@ def build_marts(**context):
     inserts = [
 
         # DAU / sessions / events
-        """
+        f"""
         INSERT INTO mart.active_users_daily
         SELECT
             toDate(created_at) AS date,
@@ -105,7 +105,7 @@ def build_marts(**context):
         """,
 
         # CTR по страницам
-        """
+        f"""
         INSERT INTO mart.page_ctr_daily
         SELECT
             toDate(created_at) AS date,
@@ -119,7 +119,7 @@ def build_marts(**context):
         """,
 
         # Доли устройств
-        """
+        f"""
         INSERT INTO mart.device_share_daily
         SELECT
             toDate(created_at) AS date,
@@ -132,7 +132,7 @@ def build_marts(**context):
         """,
 
         # Funnel / Heatmap элементов
-        """
+        f"""
         INSERT INTO mart.element_funnel_daily
         SELECT
             toDate(created_at) AS date,
@@ -149,7 +149,7 @@ def build_marts(**context):
         """,
 
         # Длительность сессии
-        """
+        f"""
         INSERT INTO mart.session_duration_daily
         SELECT
             date,
@@ -183,6 +183,7 @@ with DAG(
     start_date=datetime(2025, 1, 1),
     schedule_interval="*/5 * * * *",
     catchup=False,
+    is_paused_upon_creation=False,
     tags=["clickstream", "etl"],
 ) as dag:
 

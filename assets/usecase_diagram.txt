@@ -1,0 +1,19 @@
+@startuml
+left to right direction
+
+actor User
+actor Analyst
+actor DevOps
+
+rectangle "Clickstream Platform" {
+  User --> (Generate Events)
+  (Generate Events) --> (Send to API)
+
+  Analyst --> (View Dashboards)
+  Analyst --> (Run Analytics)
+
+  DevOps --> (Monitor System)
+  DevOps --> (Manage ETL)
+}
+
+@enduml

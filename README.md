@@ -61,11 +61,14 @@ docker compose up -d
 | Prometheus      | http://localhost:9090  |
 | Grafana         | http://localhost:3000  |
 | Airflow UI      | http://localhost:5080  |
+| Apache Superset | http://localhost:8088  |
 
 **Учетные данные:**
 
+- RabbitMQ: guest / guest
 - Grafana: admin / admin
 - Airflow: admin / admin
+- Apache Superset: admin / admin
 
 ## Основная часть
 
@@ -105,27 +108,86 @@ docker compose up -d
 | ETL           | Airflow    | Очистка и витрины       |
 | Monitoring    | Prometheus | Метрики                 |
 | Visualization | Grafana    | Дашборды                |
+| Visualization | Superset   | Аналитические дашборды  |
 
 <!--
-### Проектирование
-
 #### Архитектура приложения
 
 - Предоставьте **расчеты** нагрузки и требуемых **ресурсов** (память/процессор) для вашей системы.
-- Приведите UML-диаграммы с **разьяснениями**:
-  - [Юзкейсы](https://plantuml.com/ru-dark/use-case-diagram)
-  - [Последовательности выполнения](https://plantuml.com/ru-dark/sequence-diagram)
-  - [Блок-схемы](https://plantuml.com/ru-dark/activity-diagram-beta)
-  - И другие по необходимости
+-->
 
-#### Схемы баз данных
+### Проектирование
 
-[DBML-схемы](https://dbml.dbdiagram.io/home/) **всех** таблиц во **всех** используемых базах данных
+#### UML-диаграммы
+
+**Use Case Diagram (сценарии использования)**
+
+![Схема баз данных](./assets/usecase_diagram.svg)
+
+Пользователь генерирует события, аналитик работает с витринами, DevOps отвечает за стабильность и ETL.
+
+**Sequence Diagram (путь события)**
+
+![Схема баз данных](./assets/sequence_diagram.svg)
+
+События асинхронны, ingestion и аналитика полностью разделены.
+
+**Activity Diagram (ETL в Airflow)**
+
+![Схема баз данных](./assets/activity_diagram.svg)
+
+ETL инкрементальный (5 минут) + daily rebuild витрин через DELETE + INSERT.
+
+#### Схема баз данных
+
+![Схема баз данных](./assets/dbml_schema.svg)
 
 #### Описание API
 
-Опишите взаимодействие с приложением по REST API.
--->
+**POST /events** (принимает список событий)
+
+Пример запроса:
+
+```json
+[
+  {
+    "type": "click",
+    "created_at": "2025-01-01T10:00:00Z",
+    "session_id": "session-123",
+    "user_id": 1001,
+    "url": "/checkout",
+    "referrer": "https://example.com",
+    "device_type": "mobile",
+    "user_agent": "Mozilla/5.0",
+    "ip": "1.2.3.4",
+    "payload": {
+      "event_title": "checkout",
+      "element_id": "#submit-button",
+      "x": 445,
+      "y": 315
+    }
+  }
+]
+```
+
+Ответ:
+
+```json
+{
+  "inserted": 1
+}
+```
+
+#### Дашборды Grafana
+
+- API Metrics - [JSON](./assets/metrics_grafana.json)
+- Infrastructure - ID 1860
+- RabbitMQ - ID 10991
+
+#### Дашборды Apache Superset
+
+[Аналитические дашборды](./assets/superset_dashboard.zip)
+
 
 ### Тестирование
 

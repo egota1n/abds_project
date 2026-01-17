@@ -1,20 +1,24 @@
 @startuml
 actor User
-participant API
+participant "FastAPI\nIngest API" as API
 participant RabbitMQ
 participant Consumer
 participant ClickHouse
 participant Airflow
 participant Superset
 
+== HTTP ingestion ==
 User -> API: POST /events
-API -> RabbitMQ: publish event
+API -> ClickHouse: INSERT raw.events
 API --> User: 200 OK
 
-RabbitMQ -> Consumer: deliver batch
-Consumer -> API: POST batch
+== Async ingestion ==
+Producer -> RabbitMQ: publish event
+RabbitMQ -> Consumer: deliver messages
+Consumer -> API: POST /events (batch)
 API -> ClickHouse: INSERT raw.events
 
+== Analytics ==
 Airflow -> ClickHouse: ETL raw → dwh → mart
 Superset -> ClickHouse: SELECT marts
 

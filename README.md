@@ -184,9 +184,15 @@ ETL инкрементальный (5 минут) + daily rebuild витрин �
 - Infrastructure - ID 1860
 - RabbitMQ - ID 10991
 
+![Метрики API](./assets/dashboard_api_grafana.jpg)
+
+![Метрики системы](./assets/dashboard_system_grafana.jpg)
+
+![Метрики RabbitMQ](./assets/dashboard_rabbitmq_grafana.jpg)
+
 #### Дашборды Apache Superset
 
-[Аналитические дашборды](./assets/superset_dashboard.zip)
+![Аналитический дашборд](./assets/dashboard_superset.jpg)
 
 
 ### Тестирование

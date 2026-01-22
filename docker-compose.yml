@@ -1,0 +1,145 @@
+services:
+  # ClickHouse — основное аналитическое хранилище
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./infra/clickhouse/init:/docker-entrypoint-initdb.d
+      # Кастомная конфигурация пользователей и прав
+      - ./infra/clickhouse/users.xml:/etc/clickhouse-server/users.d/users.xml
+    ulimits:
+      # Рекомендуемые лимиты для ClickHouse
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  # RabbitMQ — брокер сообщений для clickstream событий
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  # Api — работа с сервисом
+  api:
+    build: ./services/api
+    ports:
+      - "4015:4015"
+    depends_on:
+      - clickhouse
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # Generator – генерация данных для RabbitMQ
+  generator:
+    build: ./services/generator
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_QUEUE=clickstream.events
+      - RATE_PER_SEC=30
+
+  # Сonsumer – подписывается на сообщения от генератора
+  consumer:
+    build: ./services/consumer
+    depends_on:
+      - rabbitmq
+      - api
+    environment:
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_QUEUE=clickstream.events
+      - API_URL=http://api:4015/events
+      - BATCH_SIZE=200
+      - FLUSH_INTERVAL_SEC=1.0
+
+  # Prometheus — сбор метрик
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - api
+  
+   # Node exporter — метрики хоста
+  node_exporter:
+    image: prom/node-exporter
+    ports:
+      - "9100:9100"
+
+  # Grafana — визуализация
+  grafana:
+    image: grafana/grafana:11.4.0
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  # Apache Superset – аналитические дашборды
+  superset: 
+    build: ./infra/superset
+    container_name: superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=supersecretkey
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin
+      - ADMIN_EMAIL=admin@example.com
+    depends_on:
+      - clickhouse
+    volumes:
+      - ./infra/superset:/app/superset_home
+    command: >
+      bash -c "
+      superset db upgrade &&
+      superset fab create-admin
+        --username admin
+        --firstname Admin
+        --lastname User
+        --email admin@example.com
+        --password admin || true &&
+      superset init &&
+      superset run -h 0.0.0.0 -p 8088
+      "
+  
+  airflow:
+    build: ./infra/airflow
+    ports:
+      - "5080:8080"
+    environment:
+      # Упрощенная конфигурация для локальной разработки
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      # Web UI
+      - GUNICORN_CMD_ARGS=--bind 0.0.0.0:8793
+      - AIRFLOW__WEBSERVER__RBAC=True
+      - AIRFLOW__WEBSERVER__AUTHENTICATE=True
+      - AIRFLOW__WEBSERVER__AUTH_BACKEND=airflow.auth.backend.basic_auth
+    volumes:
+      - ./infra/airflow/dags:/opt/airflow/dags
+    command: >
+      bash -c "
+      airflow db init &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
+      airflow standalone
+      "
+
+  # CSV Loader – загрузка первичных данных с помощью csv
+  csv_loader:
+    build: ./services/csv_loader
+    depends_on:
+      - api
+    environment:
+      - API_URL=http://api:4015/events
+      - CSV_PATH=/data/events.csv
+      - CHUNK=500
+    volumes:
+      - ./data:/data
+    profiles:
+      - manual

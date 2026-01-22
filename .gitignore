@@ -1,0 +1,13 @@
+# CSV Data
+events.csv
+
+# Apache Airflow
+__pycache__
+
+# Apache Superset
+infra/superset/superset.db
+infra/superset/*.db
+superset_home/
+
+# Tests
+.coverage

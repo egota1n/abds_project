@@ -1,0 +1,108 @@
+// DATABASE: raw
+
+Table raw.events {
+  id UUID [pk]
+  type varchar
+  created_at DateTime
+  received_at DateTime
+  session_id varchar
+  user_id UInt64
+  ip varchar
+  url varchar
+  referrer varchar
+  device_type varchar
+  user_agent varchar
+  payload String
+  source varchar
+}
+
+
+// DATABASE: dwh
+
+Table dwh.events_clean {
+  id UUID [pk]
+  type varchar
+  created_at DateTime
+  received_at DateTime
+  session_id varchar
+  user_id UInt64
+  ip varchar
+  url varchar
+  referrer varchar
+  device_type varchar
+  user_agent varchar
+  event_title varchar
+  element_id varchar
+  x UInt32
+  y UInt32
+  source varchar
+}
+
+
+// DATABASE: mart
+
+Table mart.active_users_daily {
+  date Date [pk]
+  dau UInt64
+  sessions UInt64
+  events UInt64
+}
+
+Table mart.page_ctr_daily {
+  date Date
+  url varchar
+  views UInt64
+  clicks UInt64
+  ctr Float64
+
+  Indexes {
+    (date, url) [pk]
+  }
+}
+
+Table mart.device_share_daily {
+  date Date
+  device_type varchar
+  events UInt64
+  users UInt64
+
+  Indexes {
+    (date, device_type) [pk]
+  }
+}
+
+Table mart.element_funnel_daily {
+  date Date
+  event_title varchar
+  element_id varchar
+  views UInt64
+  clicks UInt64
+  click_to_view Float64
+
+  Indexes {
+    (date, event_title, element_id) [pk]
+  }
+}
+
+Table mart.session_duration_daily {
+  date Date [pk]
+  avg_session_duration_sec Float64
+}
+
+// raw -> dwh
+Ref: raw.events.id > dwh.events_clean.id
+Ref: raw.events.session_id > dwh.events_clean.session_id
+Ref: raw.events.user_id > dwh.events_clean.user_id
+
+// dwh -> marts
+Ref: dwh.events_clean.created_at > mart.active_users_daily.date
+Ref: dwh.events_clean.created_at > mart.page_ctr_daily.date
+Ref: dwh.events_clean.created_at > mart.device_share_daily.date
+Ref: dwh.events_clean.created_at > mart.element_funnel_daily.date
+Ref: dwh.events_clean.created_at > mart.session_duration_daily.date
+
+// dwh -> marts
+Ref: dwh.events_clean.url > mart.page_ctr_daily.url
+Ref: dwh.events_clean.device_type > mart.device_share_daily.device_type
+Ref: dwh.events_clean.element_id > mart.element_funnel_daily.element_id
+Ref: dwh.events_clean.event_title > mart.element_funnel_daily.event_title
